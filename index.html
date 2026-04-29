@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Mi Progreso · Zepp</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+--bg: #0e0e14;
+--surface: #16161f;
+--card: #1c1c28;
+--border: #2a2a3a;
+--accent: #c084fc;
+--accent2: #f472b6;
+--accent3: #38bdf8;
+--accent4: #4ade80;
+--text: #f0eeff;
+--muted: #7c7c9e;
+--good: #4ade80;
+--bad: #f87171;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+background: var(--bg);
+color: var(--text);
+font-family: 'DM Sans', sans-serif;
+min-height: 100vh;
+padding-bottom: 50px;
+}
+
+.header {
+background: linear-gradient(135deg, #1a0a2e 0%, #0e0e14 70%);
+padding: 52px 20px 28px;
+text-align: center;
+border-bottom: 1px solid var(–border);
+position: relative;
+overflow: hidden;
+}
+.header::before {
+content: ‘’;
+position: absolute;
+top: -80px; left: 50%; transform: translateX(-50%);
+width: 320px; height: 320px;
+background: radial-gradient(circle, rgba(192,132,252,0.12) 0%, transparent 70%);
+pointer-events: none;
+}
+.header h1 {
+font-family: ‘Playfair Display’, serif;
+font-size: 20px;
+font-weight: 700;
+background: linear-gradient(135deg, var(–accent) 0%, var(–accent2) 100%);
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+background-clip: text;
+letter-spacing: 0.01em;
+margin-bottom: 2px;
+}
+.header p { color: var(–muted); font-size: 11px; font-weight: 300; letter-spacing: 0.05em; }
+.header-profile {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 14px;
+margin-bottom: 14px;
+}
+.avatar {
+width: 62px; height: 62px;
+border-radius: 50%;
+object-fit: cover;
+object-position: center 10%;
+border: 2.5px solid var(–accent);
+box-shadow: 0 0 18px rgba(192,132,252,0.45);
+flex-shrink: 0;
+}
+.header-profile-text { text-align: left; }
+.profile-name {
+font-family: ‘Playfair Display’, serif;
+font-size: 22px;
+font-weight: 700;
+background: linear-gradient(135deg, var(–text) 0%, var(–accent) 100%);
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+background-clip: text;
+line-height: 1.1;
+}
+.profile-sub { color: var(–muted); font-size: 11px; margin-top: 3px; }
+
+.upload-zone {
+margin: 18px 16px 0;
+border: 1.5px dashed var(–border);
+border-radius: 18px;
+padding: 22px 16px;
+text-align: center;
+cursor: pointer;
+background: var(–surface);
+transition: all 0.2s;
+}
+.upload-zone.dragover { border-color: var(–accent); background: rgba(192,132,252,0.05); }
+.upload-zone input { display: none; }
+.upload-icon { font-size: 30px; margin-bottom: 8px; }
+.upload-zone p { color: var(–muted); font-size: 13px; }
+.upload-zone strong { color: var(–accent); }
+.upload-btn {
+margin-top: 12px;
+display: inline-block;
+background: linear-gradient(135deg, var(–accent), var(–accent2));
+color: white;
+border: none;
+border-radius: 10px;
+padding: 10px 22px;
+font-size: 13px;
+font-family: ‘DM Sans’, sans-serif;
+font-weight: 500;
+cursor: pointer;
+}
+
+.stats-grid {
+display: grid;
+grid-template-columns: repeat(2, 1fr);
+gap: 10px;
+margin: 16px 16px 0;
+}
+.stat-card {
+background: var(–card);
+border: 1px solid var(–border);
+border-radius: 16px;
+padding: 15px;
+position: relative;
+overflow: hidden;
+}
+.stat-card::after {
+content: ‘’;
+position: absolute;
+top: -10px; right: -10px;
+width: 55px; height: 55px;
+border-radius: 50%;
+opacity: 0.12;
+}
+.stat-card.c-peso::after { background: var(–accent3); }
+.stat-card.c-imc::after { background: var(–accent); }
+.stat-card.c-grasa::after { background: var(–accent2); }
+.stat-card.c-visc::after { background: var(–accent4); }
+.stat-label { font-size: 10px; color: var(–muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+.stat-value { font-family: ‘Playfair Display’, serif; font-size: 28px; font-weight: 700; line-height: 1; }
+.stat-value.c-peso { color: var(–accent3); }
+.stat-value.c-imc { color: var(–accent); }
+.stat-value.c-grasa { color: var(–accent2); }
+.stat-value.c-visc { color: var(–accent4); }
+.stat-unit { font-size: 11px; color: var(–muted); margin-left: 2px; font-family: ‘DM Sans’, sans-serif; }
+.stat-delta { margin-top: 5px; font-size: 11px; font-weight: 500; }
+.stat-delta.up { color: var(–bad); }
+.stat-delta.down { color: var(–good); }
+.stat-delta.flat { color: var(–muted); }
+.imc-badge {
+display: inline-block;
+margin-top: 5px;
+padding: 2px 9px;
+border-radius: 20px;
+font-size: 10px;
+font-weight: 500;
+}
+
+.imc-scale {
+margin: 14px 16px 0;
+background: var(–card);
+border: 1px solid var(–border);
+border-radius: 16px;
+padding: 15px 16px;
+}
+.imc-scale-title { font-size: 11px; color: var(–muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+.imc-bar-wrap {
+position: relative; height: 10px; border-radius: 6px; overflow: visible; margin-bottom: 6px;
+background: linear-gradient(to right, #38bdf8 0%, #4ade80 22%, #facc15 44%, #fb923c 66%, #f87171 82%, #ef4444 100%);
+}
+.imc-needle {
+position: absolute; top: -4px;
+width: 18px; height: 18px;
+border-radius: 50%;
+background: white;
+border: 2.5px solid var(–accent);
+transform: translateX(-50%);
+box-shadow: 0 0 10px rgba(192,132,252,0.7);
+transition: left 0.8s cubic-bezier(.34,1.56,.64,1);
+}
+.imc-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(–muted); margin-top: 3px; }
+
+.section { margin: 20px 16px 0; }
+.section-title {
+font-family: ‘Playfair Display’, serif;
+font-size: 17px;
+margin-bottom: 12px;
+display: flex; align-items: center; gap: 8px;
+}
+.section-title .sub { color: var(–muted); font-family: ‘DM Sans’, sans-serif; font-size: 12px; font-weight: 300; }
+.chart-card {
+background: var(–card);
+border: 1px solid var(–border);
+border-radius: 20px;
+padding: 18px 14px 14px;
+margin-bottom: 14px;
+}
+.chart-label { font-size: 12px; color: var(–muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+.chart-wrap { position: relative; height: 175px; }
+
+.progress-table {
+background: var(–card);
+border: 1px solid var(–border);
+border-radius: 20px;
+overflow: hidden;
+}
+.tbl-head {
+display: grid;
+grid-template-columns: 1.3fr 1fr 0.9fr 1fr 1fr;
+padding: 11px 12px;
+background: rgba(255,255,255,0.03);
+border-bottom: 1px solid var(–border);
+}
+.tbl-head span { font-size: 10px; color: var(–muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.tbl-row {
+display: grid;
+grid-template-columns: 1.3fr 1fr 0.9fr 1fr 1fr;
+padding: 12px 12px;
+border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.tbl-row:last-child { border-bottom: none; }
+.tbl-row span { font-size: 12px; }
+.tbl-row .date { color: var(–muted); font-size: 11px; }
+.up { color: var(–bad) !important; }
+.down { color: var(–good) !important; }
+.flat { color: var(–muted) !important; }
+
+.delta-section { margin: 20px 16px 0; }
+
+/* TABLE ACTIONS */
+.tbl-actions { display: flex; gap: 5px; align-items: center; }
+.btn-icon {
+background: none; border: none; cursor: pointer;
+font-size: 14px; padding: 2px 5px; border-radius: 6px;
+transition: background 0.15s; line-height: 1;
+}
+.btn-icon:active { background: rgba(255,255,255,0.1); }
+
+/* EDIT MODAL */
+.modal-overlay {
+position: fixed; inset: 0;
+background: rgba(0,0,0,0.72);
+z-index: 200;
+display: flex; align-items: flex-end; justify-content: center;
+opacity: 0; pointer-events: none;
+transition: opacity 0.25s;
+}
+.modal-overlay.show { opacity: 1; pointer-events: all; }
+.modal-box {
+background: var(–card);
+border: 1px solid var(–border);
+border-radius: 24px 24px 0 0;
+padding: 24px 20px 44px;
+width: 100%; max-width: 480px;
+transform: translateY(30px);
+transition: transform 0.25s;
+}
+.modal-overlay.show .modal-box { transform: translateY(0); }
+.modal-title {
+font-family: ‘Playfair Display’, serif;
+font-size: 18px; margin-bottom: 18px;
+}
+.modal-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.btn-cancel {
+background: var(–surface); border: 1px solid var(–border);
+color: var(–muted); border-radius: 12px; padding: 13px;
+font-size: 14px; font-family: ‘DM Sans’, sans-serif; font-weight: 500; cursor: pointer;
+}
+.btn-save {
+background: linear-gradient(135deg, var(–accent), var(–accent2));
+color: white; border: none; border-radius: 12px; padding: 13px;
+font-size: 14px; font-family: ‘DM Sans’, sans-serif; font-weight: 500; cursor: pointer;
+}
+
+/* MANUAL ENTRY */
+.manual-section { margin: 16px 16px 0; }
+.manual-card {
+background: var(–card);
+border: 1px solid var(–border);
+border-radius: 20px;
+overflow: hidden;
+}
+.manual-header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 16px 18px;
+cursor: pointer;
+user-select: none;
+}
+.manual-header-left { display: flex; align-items: center; gap: 10px; }
+.manual-header-icon { font-size: 18px; }
+.manual-header-title { font-size: 14px; font-weight: 500; color: var(–text); }
+.manual-header-sub { font-size: 11px; color: var(–muted); margin-top: 1px; }
+.manual-chevron {
+color: var(–muted); font-size: 14px;
+transition: transform 0.25s;
+}
+.manual-chevron.open { transform: rotate(180deg); }
+.manual-body {
+padding: 0 18px 18px;
+display: none;
+}
+.manual-body.open { display: block; }
+.input-row {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 10px;
+margin-bottom: 10px;
+}
+.input-group { display: flex; flex-direction: column; gap: 5px; }
+.input-group label { font-size: 10px; color: var(–muted); text-transform: uppercase; letter-spacing: 0.07em; }
+.input-group input {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 10px;
+padding: 10px 12px;
+color: var(–text);
+font-family: ‘DM Sans’, sans-serif;
+font-size: 14px;
+outline: none;
+transition: border-color 0.2s;
+width: 100%;
+-webkit-appearance: none;
+}
+.input-group input:focus { border-color: var(–accent); }
+.input-group input::placeholder { color: var(–muted); font-size: 13px; }
+.btn-add {
+width: 100%;
+background: linear-gradient(135deg, var(–accent), var(–accent2));
+color: white;
+border: none;
+border-radius: 12px;
+padding: 13px;
+font-size: 14px;
+font-family: ‘DM Sans’, sans-serif;
+font-weight: 500;
+cursor: pointer;
+margin-top: 4px;
+letter-spacing: 0.02em;
+}
+.btn-add:active { opacity: 0.85; }
+.input-hint { font-size: 11px; color: var(–muted); margin-top: 8px; text-align: center; }
+
+.toast {
+position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+background: var(–card); border: 1px solid var(–accent); color: var(–text);
+padding: 11px 20px; border-radius: 14px; font-size: 13px;
+z-index: 999; opacity: 0; transition: opacity 0.3s;
+white-space: nowrap; box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+.toast.show { opacity: 1; }
+.hidden { display: none !important; }
+
+/* DRIVE CONNECT */
+.drive-banner {
+margin: 14px 16px 0;
+background: linear-gradient(135deg, rgba(192,132,252,0.1), rgba(244,114,182,0.08));
+border: 1px solid rgba(192,132,252,0.3);
+border-radius: 16px;
+padding: 16px 18px;
+display: flex;
+align-items: center;
+gap: 14px;
+}
+.drive-icon { font-size: 26px; flex-shrink: 0; }
+.drive-text { flex: 1; }
+.drive-text strong { font-size: 13px; color: var(–text); display: block; margin-bottom: 2px; }
+.drive-text span { font-size: 11px; color: var(–muted); }
+.btn-connect {
+flex-shrink: 0;
+background: linear-gradient(135deg, var(–accent), var(–accent2));
+color: white; border: none; border-radius: 10px;
+padding: 9px 16px; font-size: 12px;
+font-family: ‘DM Sans’, sans-serif; font-weight: 500;
+cursor: pointer; white-space: nowrap;
+}
+.btn-connect:disabled { opacity: 0.6; }
+.sync-bar {
+margin: 8px 16px 0;
+display: flex; align-items: center; gap: 6px;
+font-size: 11px;
+}
+#syncStatus { color: var(–muted); }
+</style>
+
+</head>
+<body>
+
+<div class="header">
+<div class="header-profile">
+<img class="avatar" src="data:image/jpeg;base64,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" alt="Mai">
+<div class="header-profile-text">
+<div class="profile-name">Mai</div>
+<div class="profile-sub">Composición corporal</div>
+</div>
+</div>
+<h1>Mojombre Analytics</h1>
+<p>Seguimiento Zepp · 169 cm · 50 años</p>
+</div>
+
+<!-- DRIVE CONNECT BANNER -->
+
+<div class="drive-banner hidden" id="driveConnect">
+<span class="drive-icon">☁️</span>
+<div class="drive-text">
+<strong>Conectar Google Drive</strong>
+<span>Guarda tus datos en la nube y accede desde cualquier dispositivo</span>
+</div>
+<button class="btn-connect" id="btnConnect" onclick="connectDrive()">Conectar</button>
+</div>
+<div class="sync-bar"><span id="syncStatus"></span></div>
+
+<div class="upload-zone" id="uploadZone"
+onclick="document.getElementById('fileInput').click()"
+ondragover="onDrag(event,'over')" ondragleave="onDrag(event,'leave')" ondrop="onDrag(event,'drop')">
+<input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFile(event)">
+<div class="upload-icon">📊</div>
+<p>Sube tu archivo Excel de <strong>Zepp</strong></p>
+<p style="margin-top:4px;font-size:11px;">Columnas: Fecha (dd/mm/yyyy) · Peso · Grasa · Grasa visceral</p>
+<button class="upload-btn">Seleccionar fichero</button>
+</div>
+
+<!-- MANUAL ENTRY -->
+
+<div class="manual-section">
+<div class="manual-card">
+<div class="manual-header" onclick="toggleManual()">
+<div class="manual-header-left">
+<span class="manual-header-icon">✏️</span>
+<div>
+<div class="manual-header-title">Añadir medición manual</div>
+<div class="manual-header-sub">Sin necesidad de fichero</div>
+</div>
+</div>
+<span class="manual-chevron" id="manualChevron">▼</span>
+</div>
+<div class="manual-body" id="manualBody">
+<div class="input-row">
+<div class="input-group">
+<label>Fecha</label>
+<input type="text" id="inFecha" placeholder="dd/mm/aaaa" maxlength="10" inputmode="numeric" oninput="autoSlash(this)">
+</div>
+<div class="input-group">
+<label>Peso (kg)</label>
+<input type="number" id="inPeso" placeholder="87.5" step="0.1" inputmode="decimal">
+</div>
+</div>
+<div class="input-row">
+<div class="input-group">
+<label>Grasa corporal (%)</label>
+<input type="number" id="inGrasa" placeholder="40.4" step="0.1" inputmode="decimal">
+</div>
+<div class="input-group">
+<label>Grasa visceral</label>
+<input type="number" id="inVisc" placeholder="10" step="1" inputmode="decimal">
+</div>
+</div>
+<button class="btn-add" onclick="addManual()">Guardar medición</button>
+<p class="input-hint">Grasa corporal y visceral son opcionales</p>
+</div>
+</div>
+</div>
+
+<div class="stats-grid hidden" id="statsGrid">
+<div class="stat-card c-peso">
+<div class="stat-label">Peso actual</div>
+<div><span class="stat-value c-peso" id="sPeso">—</span><span class="stat-unit">kg</span></div>
+<div class="stat-delta" id="dPeso"></div>
+</div>
+<div class="stat-card c-imc">
+<div class="stat-label">IMC</div>
+<div><span class="stat-value c-imc" id="sIMC">—</span></div>
+<div id="imcBadge"></div>
+</div>
+<div class="stat-card c-grasa">
+<div class="stat-label">Grasa corporal</div>
+<div><span class="stat-value c-grasa" id="sGrasa">—</span><span class="stat-unit">%</span></div>
+<div class="stat-delta" id="dGrasa"></div>
+</div>
+<div class="stat-card c-visc">
+<div class="stat-label">Grasa visceral</div>
+<div><span class="stat-value c-visc" id="sVisc">—</span></div>
+<div class="stat-delta" id="dVisc"></div>
+</div>
+</div>
+
+<div class="imc-scale hidden" id="imcScale">
+<div class="imc-scale-title">Escala IMC · altura 169 cm · 50 años</div>
+<div class="imc-bar-wrap">
+<div class="imc-needle" id="imcNeedle" style="left:0%"></div>
+</div>
+<div class="imc-labels">
+<span>&lt;18.5</span><span>Normal</span><span>Sobrepeso</span><span>&gt;30</span>
+</div>
+</div>
+
+<div class="section hidden" id="chartsSection">
+<div class="section-title">Evolución <span class="sub">todas las mediciones</span></div>
+
+<div class="chart-card">
+<div class="chart-label">⚖️ Peso (kg)</div>
+<div class="chart-wrap"><canvas id="chartPeso"></canvas></div>
+</div>
+
+<div class="chart-card">
+<div class="chart-label">📉 IMC</div>
+<div class="chart-wrap"><canvas id="chartIMC"></canvas></div>
+</div>
+
+<div class="chart-card">
+<div class="chart-label">🔥 Grasa corporal (%)</div>
+<div class="chart-wrap"><canvas id="chartGrasa"></canvas></div>
+</div>
+
+<div class="chart-card">
+<div class="chart-label">🫀 Grasa visceral</div>
+<div class="chart-wrap"><canvas id="chartVisc"></canvas></div>
+</div>
+
+<div class="chart-card">
+<div class="chart-label">📊 Visión general (normalizado)</div>
+<div class="chart-wrap" style="height:200px"><canvas id="chartAll"></canvas></div>
+</div>
+</div>
+
+<div class="delta-section hidden" id="tableSection">
+<div class="section-title">Registro <span class="sub">incrementos y decrementos</span></div>
+<div class="progress-table" id="progressTable"></div>
+</div>
+
+<!-- EDIT MODAL -->
+
+<div class="modal-overlay" id="editModal" onclick="closeModal(event)">
+<div class="modal-box">
+<div class="modal-title">✏️ Editar medición</div>
+<input type="hidden" id="editOrigFecha">
+<div class="input-row">
+<div class="input-group">
+<label>Fecha</label>
+<input type="text" id="editFecha" maxlength="10" inputmode="numeric" oninput="autoSlash(this)">
+</div>
+<div class="input-group">
+<label>Peso (kg)</label>
+<input type="number" id="editPeso" step="0.1" inputmode="decimal">
+</div>
+</div>
+<div class="input-row">
+<div class="input-group">
+<label>Grasa corporal (%)</label>
+<input type="number" id="editGrasa" step="0.1" inputmode="decimal">
+</div>
+<div class="input-group">
+<label>Grasa visceral</label>
+<input type="number" id="editVisc" step="1" inputmode="decimal">
+</div>
+</div>
+<div class="modal-btns">
+<button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+<button class="btn-save" onclick="saveEdit()">Guardar</button>
+</div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ALTURA = 1.69;
+
+// ── Datos iniciales cargados directamente (tu fichero Zepp) ──
+const INITIAL = [
+{ fecha: '18/03/2026', peso: 91.9, grasa: 43.6, visceral: 10 },
+{ fecha: '08/04/2026', peso: 88.9, grasa: 40.4, visceral: 10 },
+{ fecha: '17/04/2026', peso: 87.7, grasa: 40.4, visceral: 10 },
+];
+
+let records = [];
+let charts = {};
+
+// ── Parsear fecha dd/mm/yyyy ──
+function parseDate(str) {
+const s = String(str || '').trim().replace(/[-\.]/g, '/');
+const p = s.split('/');
+if (p.length === 3) {
+const [d, m, y] = p.map(Number);
+if (d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 2000) {
+return new Date(y, m - 1, d);
+}
+}
+return null;
+}
+
+function fmtDate(dt) { return dt ? `${pad(dt.getDate())}/${pad(dt.getMonth()+1)}/${dt.getFullYear()}` : '—'; }
+function fmtShort(dt) { return dt ? `${dt.getDate()}/${dt.getMonth()+1}` : '—'; }
+function pad(n) { return String(n).padStart(2,'0'); }
+
+// ── IMC ──
+function imc(peso) { return +(peso / (ALTURA * ALTURA)).toFixed(1); }
+
+function imcCat(v) {
+if (v < 18.5) return { label: 'Bajo peso', color: '#38bdf8', bg: 'rgba(56,189,248,0.15)' };
+if (v < 25) return { label: 'Normopeso', color: '#4ade80', bg: 'rgba(74,222,128,0.15)' };
+if (v < 30) return { label: 'Sobrepeso', color: '#facc15', bg: 'rgba(250,204,21,0.15)' };
+if (v < 35) return { label: 'Obesidad I', color: '#fb923c', bg: 'rgba(251,146,60,0.15)' };
+return { label: 'Obesidad II',color: '#f87171', bg: 'rgba(248,113,113,0.15)' };
+}
+
+function imcPos(v) { return Math.min(100, Math.max(0, ((v - 15) / (42 - 15)) * 100)); }
+
+function enrich(r) {
+const dt = parseDate(r.fecha);
+return { ...r, dateObj: dt, fecha: fmtDate(dt), imc: imc(r.peso) };
+}
+
+// ── Google Drive DB ──
+const GD_CLIENT_ID = '640752075330-3hq7u6tu7phd9gcbor7gns0o1n1mi1uv.apps.googleusercontent.com';
+const GD_FILENAME = 'mojombre_analytics.json';
+let gdFileId = null;
+let gdToken = null;
+let gdTokenClient = null;
+
+function setStatus(msg, color) {
+const el = document.getElementById('syncStatus');
+if (!el) return;
+el.textContent = msg;
+el.style.color = color || 'var(--muted)';
+}
+
+// ── Token refresh: pide token silencioso, si no lo hay muestra popup ──
+function getToken(callback) {
+if (!gdTokenClient) {
+gdTokenClient = google.accounts.oauth2.initTokenClient({
+client_id: GD_CLIENT_ID,
+scope: 'https://www.googleapis.com/auth/drive.file',
+prompt: '', // sin prompt = intento silencioso primero
+callback: (resp) => {
+if (resp && resp.access_token) {
+gdToken = resp.access_token;
+// Renovar automáticamente antes de que expire (55 min)
+setTimeout(() => getToken(() => {}), 55 * 60 * 1000);
+callback(true);
+} else {
+gdToken = null;
+callback(false);
+}
+}
+});
+}
+gdTokenClient.requestAccessToken({ prompt: '' });
+}
+
+async function gdFindFile() {
+const res = await fetch(
+`https://www.googleapis.com/drive/v3/files?q=name='${GD_FILENAME}'+and+trashed=false&fields=files(id)`,
+{ headers: { Authorization: `Bearer ${gdToken}` } }
+);
+if (!res.ok) throw new Error('Drive search failed: ' + res.status);
+const data = await res.json();
+return (data.files && data.files.length) ? data.files[0].id : null;
+}
+
+async function gdReadFile(fileId) {
+const res = await fetch(
+`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+{ headers: { Authorization: `Bearer ${gdToken}` } }
+);
+if (!res.ok) throw new Error('Drive read failed: ' + res.status);
+return await res.json();
+}
+
+async function gdWriteFile(content) {
+const body = JSON.stringify(content);
+const blob = new Blob([body], { type: 'application/json' });
+
+let res;
+if (gdFileId) {
+// Update existing file (simple media upload)
+res = await fetch(
+`https://www.googleapis.com/upload/drive/v3/files/${gdFileId}?uploadType=media`,
+{ method: 'PATCH', headers: { Authorization: `Bearer ${gdToken}`, 'Content-Type': 'application/json' }, body: blob }
+);
+} else {
+// Create new file with metadata
+const meta = JSON.stringify({ name: GD_FILENAME, mimeType: 'application/json' });
+const form = new FormData();
+form.append('metadata', new Blob([meta], { type: 'application/json' }));
+form.append('file', blob);
+res = await fetch(
+'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+{ method: 'POST', headers: { Authorization: `Bearer ${gdToken}` }, body: form }
+);
+}
+if (!res.ok) throw new Error('Drive write failed: ' + res.status);
+const data = await res.json();
+if (data.id) gdFileId = data.id;
+}
+
+async function saveToStorage() {
+if (!gdToken) return;
+setStatus('💾 Guardando…', 'var(--accent)');
+try {
+const data = records.map(r => ({
+fecha: r.fecha, peso: r.peso,
+grasa: r.grasa, visceral: r.visceral
+}));
+await gdWriteFile(data);
+setStatus('☁️ Drive', 'var(--good)');
+setTimeout(() => setStatus('☁️ Drive · ' + fmtDate(new Date()), 'var(--muted)'), 2000);
+} catch(e) {
+setStatus('⚠️ Error guardando', 'var(--bad)');
+console.error('saveToStorage error:', e);
+}
+}
+
+async function loadFromDrive() {
+try {
+gdFileId = await gdFindFile();
+if (!gdFileId) return null;
+const data = await gdReadFile(gdFileId);
+return Array.isArray(data) ? data.map(enrich) : null;
+} catch(e) {
+console.error('loadFromDrive error:', e);
+return null;
+}
+}
+
+function mergeWithInitial(saved) {
+const map = {};
+INITIAL.map(enrich).forEach(r => map[r.fecha] = r);
+if (saved) saved.forEach(r => map[r.fecha] = r);
+return Object.values(map).sort((a, b) => a.dateObj - b.dateObj);
+}
+
+// ── Auto-auth on load ──
+function initDrive() {
+// Wait for GSI to be ready
+if (typeof google === 'undefined' || !google.accounts) {
+setTimeout(initDrive, 300);
+return;
+}
+
+setStatus('🔐 Conectando con Drive…', 'var(--accent)');
+
+getToken(async (ok) => {
+if (!ok) {
+// Silent failed — show manual connect button as fallback
+setStatus('', '');
+document.getElementById('driveConnect').classList.remove('hidden');
+return;
+}
+
+document.getElementById('driveConnect').classList.add('hidden');
+setStatus('📂 Cargando datos…', 'var(--accent)');
+
+const saved = await loadFromDrive();
+records = mergeWithInitial(saved);
+
+if (!saved) {
+// First time — save initial data to Drive
+await saveToStorage();
+}
+
+render();
+setTodayDate();
+setStatus('☁️ Drive · ' + fmtDate(new Date()), 'var(--muted)');
+});
+}
+
+// Manual connect button fallback (shown only if silent auth fails)
+async function connectDrive() {
+const btn = document.getElementById('btnConnect');
+btn.textContent = 'Conectando…';
+btn.disabled = true;
+
+// Force popup this time
+if (!gdTokenClient) {
+gdTokenClient = google.accounts.oauth2.initTokenClient({
+client_id: GD_CLIENT_ID,
+scope: 'https://www.googleapis.com/auth/drive.file',
+callback: async (resp) => {
+if (resp && resp.access_token) {
+gdToken = resp.access_token;
+setTimeout(() => getToken(() => {}), 55 * 60 * 1000);
+document.getElementById('driveConnect').classList.add('hidden');
+setStatus('📂 Cargando datos…', 'var(--accent)');
+const saved = await loadFromDrive();
+records = mergeWithInitial(saved);
+if (!saved) await saveToStorage();
+render();
+setTodayDate();
+setStatus('☁️ Drive · ' + fmtDate(new Date()), 'var(--muted)');
+} else {
+setStatus('⚠️ No se pudo conectar', 'var(--bad)');
+btn.textContent = 'Conectar Drive';
+btn.disabled = false;
+}
+}
+});
+}
+gdTokenClient.requestAccessToken({ prompt: 'consent' });
+}
+
+// ── Guardar al cerrar/salir ──
+window.addEventListener('beforeunload', () => {
+if (gdToken && records.length) {
+// Synchronous beacon save as fallback
+const data = JSON.stringify(records.map(r => ({
+fecha: r.fecha, peso: r.peso, grasa: r.grasa, visceral: r.visceral
+})));
+// Best-effort: navigator.sendBeacon can't auth, so we rely on saveToStorage calls
+// The async saveToStorage is called on every change so data is always fresh
+}
+});
+
+// ── Init ──
+window.addEventListener('load', () => {
+// Load initial data immediately so UI is not empty while auth happens
+records = INITIAL.map(enrich);
+render();
+setTodayDate();
+// Then connect to Drive and refresh from cloud
+initDrive();
+});
+
+// ── Edit / Delete ──
+function setTodayDate() {
+const now = new Date();
+const el = document.getElementById('inFecha');
+if (el) el.value = fmtDate(now);
+}
+// ── Render ──
+function render() {
+if (!records.length) return;
+show('statsGrid'); show('imcScale'); show('chartsSection'); show('tableSection');
+
+const last = records[records.length - 1];
+const prev = records.length > 1 ? records[records.length - 2] : null;
+
+setText('sPeso', last.peso.toFixed(1));
+setText('sIMC', last.imc.toFixed(1));
+setText('sGrasa', last.grasa != null ? last.grasa.toFixed(1) : '—');
+setText('sVisc', last.visceral != null ? last.visceral : '—');
+
+const cat = imcCat(last.imc);
+document.getElementById('imcBadge').innerHTML =
+`<span class="imc-badge" style="background:${cat.bg};color:${cat.color}">${cat.label}</span>`;
+
+setTimeout(() => {
+document.getElementById('imcNeedle').style.left = imcPos(last.imc) + '%';
+}, 120);
+
+setDelta('dPeso', prev ? last.peso - prev.peso : null, ' kg');
+setDelta('dGrasa', prev && last.grasa != null && prev.grasa != null ? last.grasa - prev.grasa : null, '%');
+setDelta('dVisc', prev && last.visceral != null && prev.visceral != null ? last.visceral - prev.visceral : null, '');
+
+buildCharts();
+buildTable();
+}
+
+function setDelta(id, diff, unit) {
+const el = document.getElementById(id);
+if (diff === null) { el.textContent = ''; return; }
+const cls = diff === 0 ? 'flat' : diff > 0 ? 'up' : 'down';
+const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+const sign = diff > 0 ? '+' : '';
+el.textContent = `${arrow} ${sign}${Math.abs(diff).toFixed(1)}${unit} vs anterior`;
+el.className = `stat-delta ${cls}`;
+}
+
+// ── Charts ──
+const BASE_OPTS = {
+responsive: true,
+maintainAspectRatio: false,
+plugins: {
+legend: { display: false },
+tooltip: {
+backgroundColor: '#1c1c28',
+borderColor: '#2a2a3a',
+borderWidth: 1,
+titleColor: '#f0eeff',
+bodyColor: '#7c7c9e',
+}
+},
+scales: {
+x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7c7c9e', font: { size: 10 } } },
+y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7c7c9e', font: { size: 10 } } }
+}
+};
+
+function buildCharts() {
+if (typeof Chart === 'undefined') { setTimeout(buildCharts, 200); return; }
+const labels = records.map(r => fmtShort(r.dateObj));
+line('chartPeso', labels, records.map(r => r.peso), '#38bdf8', 'rgba(56,189,248,0.15)', v => ` ${v.toFixed(1)} kg`);
+line('chartIMC', labels, records.map(r => r.imc), '#c084fc', 'rgba(192,132,252,0.15)', v => ` IMC ${v.toFixed(1)}`);
+line('chartGrasa', labels, records.map(r => r.grasa), '#f472b6', 'rgba(244,114,182,0.15)', v => ` ${v != null ? v.toFixed(1) : '—'}%`);
+line('chartVisc', labels, records.map(r => r.visceral), '#4ade80', 'rgba(74,222,128,0.15)', v => ` ${v}`);
+combined(labels);
+}
+
+
+function line(id, labels, data, stroke, fill, labelFn) {
+if (charts[id]) charts[id].destroy();
+const ctx = document.getElementById(id).getContext('2d');
+const g = ctx.createLinearGradient(0, 0, 0, 175);
+g.addColorStop(0, fill); g.addColorStop(1, 'rgba(0,0,0,0)');
+charts[id] = new Chart(ctx, {
+type: 'line',
+data: {
+labels,
+datasets: [{
+data, borderColor: stroke, borderWidth: 2.5,
+backgroundColor: g, fill: true, tension: 0.4,
+pointBackgroundColor: stroke,
+pointRadius: data.length <= 8 ? 5 : 3,
+pointHoverRadius: 7,
+}]
+},
+options: {
+...BASE_OPTS,
+plugins: {
+...BASE_OPTS.plugins,
+tooltip: { ...BASE_OPTS.plugins.tooltip, callbacks: { label: ctx => labelFn(ctx.parsed.y) } }
+}
+}
+});
+}
+
+function combined(labels) {
+if (charts['chartAll']) charts['chartAll'].destroy();
+const ctx = document.getElementById('chartAll').getContext('2d');
+const norm = arr => {
+const clean = arr.filter(v => v != null);
+if (!clean.length) return arr.map(() => null);
+const mn = Math.min(...clean), mx = Math.max(...clean);
+return arr.map(v => v == null ? null : mx === mn ? 50 : +((v - mn) / (mx - mn) * 100).toFixed(1));
+};
+charts['chartAll'] = new Chart(ctx, {
+type: 'line',
+data: {
+labels,
+datasets: [
+{ label: 'Peso', data: norm(records.map(r => r.peso)), borderColor: '#38bdf8', borderWidth: 2, fill: false, tension: 0.4, pointRadius: 3 },
+{ label: 'IMC', data: norm(records.map(r => r.imc)), borderColor: '#c084fc', borderWidth: 2, fill: false, tension: 0.4, pointRadius: 3 },
+{ label: 'Grasa', data: norm(records.map(r => r.grasa)), borderColor: '#f472b6', borderWidth: 2, fill: false, tension: 0.4, pointRadius: 3 },
+{ label: 'Visceral', data: norm(records.map(r => r.visceral)), borderColor: '#4ade80', borderWidth: 2, fill: false, tension: 0.4, pointRadius: 3 },
+]
+},
+options: {
+responsive: true, maintainAspectRatio: false,
+plugins: {
+legend: { display: true, labels: { color: '#7c7c9e', font: { size: 10 }, boxWidth: 12 } },
+tooltip: BASE_OPTS.plugins.tooltip
+},
+scales: { x: BASE_OPTS.scales.x, y: { ...BASE_OPTS.scales.y, display: false } }
+}
+});
+}
+
+// ── Table ──
+function buildTable() {
+const first = records[0];
+let html = `<div class="tbl-head" style="display:grid;grid-template-columns:1.2fr 0.85fr 0.75fr 0.85fr 0.85fr 0.6fr">
+<span>Fecha</span><span>Peso</span><span>IMC</span><span>Δ ant.</span><span>Δ inicio</span><span></span>
+</div>`;
+records.forEach((r, i) => {
+const prev = i > 0 ? records[i - 1] : null;
+const dPrev = prev ? r.peso - prev.peso : null;
+const dFirst = i > 0 ? r.peso - first.peso : null;
+const cat = imcCat(r.imc);
+const fmt = d => {
+if (d === null) return '<span class="flat">—</span>';
+const cls = d === 0 ? 'flat' : d > 0 ? 'up' : 'down';
+return `<span class="${cls}">${d > 0 ? '+' : ''}${d.toFixed(1)} kg</span>`;
+};
+html += `<div class="tbl-row" style="display:grid;grid-template-columns:1.2fr 0.85fr 0.75fr 0.85fr 0.85fr 0.6fr">
+<span class="date">${r.fecha}</span>
+<span>${r.peso.toFixed(1)}</span>
+<span style="color:${cat.color}">${r.imc.toFixed(1)}</span>
+${fmt(dPrev)}
+${fmt(dFirst)}
+<span class="tbl-actions">
+<button class="btn-icon" onclick="openEdit('${r.fecha}')" title="Editar">✏️</button>
+<button class="btn-icon" onclick="deleteRecord('${r.fecha}')" title="Borrar">🗑️</button>
+</span>
+</div>`;
+});
+document.getElementById('progressTable').innerHTML = html;
+}
+
+
+async function deleteRecord(fecha) {
+if (!confirm(`¿Borrar la medición del ${fecha}?`)) return;
+records = records.filter(r => r.fecha !== fecha);
+render();
+await saveToStorage();
+showToast(`🗑️ Medición del ${fecha} eliminada`);
+if (!records.length) {
+['statsGrid','imcScale','chartsSection','tableSection'].forEach(id =>
+document.getElementById(id).classList.add('hidden'));
+}
+}
+
+function openEdit(fecha) {
+const r = records.find(r => r.fecha === fecha);
+if (!r) return;
+document.getElementById('editOrigFecha').value = r.fecha;
+document.getElementById('editFecha').value = r.fecha;
+document.getElementById('editPeso').value = r.peso;
+document.getElementById('editGrasa').value = r.grasa != null ? r.grasa : '';
+document.getElementById('editVisc').value = r.visceral != null ? r.visceral : '';
+document.getElementById('editModal').classList.add('show');
+}
+
+function closeModal(e) {
+if (e && e.target !== document.getElementById('editModal')) return;
+document.getElementById('editModal').classList.remove('show');
+}
+
+async function saveEdit() {
+const origFecha = document.getElementById('editOrigFecha').value;
+const fechaStr = document.getElementById('editFecha').value.trim();
+const pesoStr = document.getElementById('editPeso').value.trim();
+const grasaStr = document.getElementById('editGrasa').value.trim();
+const viscStr = document.getElementById('editVisc').value.trim();
+
+if (!fechaStr) { showToast('⚠️ Introduce la fecha'); return; }
+const dt = parseDate(fechaStr);
+if (!dt) { showToast('⚠️ Fecha inválida'); return; }
+const peso = parseFloat(pesoStr);
+if (isNaN(peso) || peso < 20 || peso > 300) { showToast('⚠️ Peso no válido'); return; }
+
+const updated = {
+fecha: fmtDate(dt),
+dateObj: dt,
+peso,
+grasa: grasaStr ? parseFloat(grasaStr) : null,
+visceral: viscStr ? parseFloat(viscStr) : null,
+imc: imc(peso)
+};
+
+// Remove old, add updated
+records = records.filter(r => r.fecha !== origFecha);
+const map = {};
+records.forEach(r => map[r.fecha] = r);
+map[updated.fecha] = updated;
+records = Object.values(map).sort((a, b) => a.dateObj - b.dateObj);
+
+document.getElementById('editModal').classList.remove('show');
+render();
+await saveToStorage();
+showToast(`✅ Medición del ${updated.fecha} actualizada`);
+}
+
+// ── Helpers ──
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function setText(id,v) { document.getElementById(id).textContent = v; }
+
+function showToast(msg) {
+const t = document.getElementById('toast');
+t.textContent = msg; t.classList.add('show');
+setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+
+</body>
+</html>
